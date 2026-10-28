@@ -16,6 +16,10 @@
   padding: 24px 32px;
   min-width: 300px;
   max-width: 400px;
+  /* 項目が画面の高さを超えても上下が切れず、パネル内でスクロールできるように */
+  max-height: calc(100vh - 64px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .shortcut-section + .shortcut-section {

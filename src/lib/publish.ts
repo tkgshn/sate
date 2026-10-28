@@ -5,7 +5,7 @@
  * 公開先（どこへ・どう届けるか）は Sate は関知せず、コマンド側（例: text-site の publish.sh）に任せる。
  *
  * 重要（事故防止）:
- * - uuid / updated / memos / private は **絶対に公開用 md へ書き出さない**。
+ * - uuid / updated / memos は **絶対に公開用 md へ書き出さない**。
  *   特に memos は私的な余白メモなので漏洩厳禁。コマンド側に任せず Sate 側で落とす。
  */
 

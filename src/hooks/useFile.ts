@@ -65,7 +65,6 @@ export function useFile(dirPath: string) {
   const [content, setContent] = useState('');
   const [title, setTitle] = useState<string | null>(null);
   const [memos, setMemos] = useState<Memo[]>([]);
-  const [isPrivate, setIsPrivate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fileId, setFileId] = useState<string | null>(null);
   // Editor を強制再マウントするためのキー（Rewind 復元時などに使う）
@@ -79,13 +78,11 @@ export function useFile(dirPath: string) {
   const fileNameRef = useRef<string | null>(fileName);
   const contentRef = useRef(content);
   const memosRef = useRef<Memo[]>(memos);
-  const privateRef = useRef(isPrivate);
   const metadataRef = useRef<FileMetadata | null>(null);
 
   fileNameRef.current = fileName;
   contentRef.current = content;
   memosRef.current = memos;
-  privateRef.current = isPrivate;
 
   const initFile = useCallback(async () => {
     const name = await getNextFileName(dirPath);
@@ -95,7 +92,6 @@ export function useFile(dirPath: string) {
     contentRef.current = '';
     setTitle(null);
     setMemos([]);
-    setIsPrivate(false);
     setFileId(null);
     metadataRef.current = null;
   }, [dirPath]);
@@ -124,7 +120,6 @@ export function useFile(dirPath: string) {
           updatedAt: now,
           title: null,
           memos: memosRef.current,
-          private: privateRef.current,
         };
         setFileId(metadataRef.current.uuid);
       } else {
@@ -132,7 +127,6 @@ export function useFile(dirPath: string) {
           ...metadataRef.current,
           updatedAt: now,
           memos: memosRef.current,
-          private: privateRef.current,
         };
       }
 
@@ -149,9 +143,8 @@ export function useFile(dirPath: string) {
         const updatedAt = Math.floor(new Date(meta.updatedAt).getTime() / 1000);
         const firstLine = extractFirstLine(currentContent);
 
-        await upsertFile(meta.uuid, createdAt, updatedAt, meta.title, firstLine, fileName, meta.private);
-        // プライベートなファイルは全文索引を作らない（検索対象外にする）
-        await updateSearchIndex(meta.uuid, meta.private ? null : currentContent);
+        await upsertFile(meta.uuid, createdAt, updatedAt, meta.title, firstLine, fileName);
+        await updateSearchIndex(meta.uuid, currentContent);
         await addSnapshot(meta.uuid, fileContent);
       } catch {
         // DB未初期化の場合はここに来る。ファイル保存自体は成功してるので問題なし
@@ -201,8 +194,6 @@ export function useFile(dirPath: string) {
         setTitle(metadata?.title ?? null);
         setMemos(metadata?.memos ?? []);
         memosRef.current = metadata?.memos ?? [];
-        setIsPrivate(metadata?.private ?? false);
-        privateRef.current = metadata?.private ?? false;
         setFileId(metadata?.uuid ?? null);
         metadataRef.current = metadata;
       } catch (err) {
@@ -286,20 +277,6 @@ export function useFile(dirPath: string) {
     await initFile();
   }, [fileName, dirPath, initFile]);
 
-  const updatePrivate = useCallback(
-    (next: boolean) => {
-      setIsPrivate(next);
-      privateRef.current = next;
-      // プライベート状態の切り替えは即時反映したいので force 保存する。
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = null;
-      }
-      saveFile(true);
-    },
-    [saveFile]
-  );
-
   /**
    * スナップショット（フロントマター込みの全文）を現在のファイルに上書きする。
    *
@@ -329,12 +306,10 @@ export function useFile(dirPath: string) {
       metadataRef.current = restored;
       contentRef.current = body;
       memosRef.current = restored.memos;
-      privateRef.current = restored.private;
 
       setContent(body);
       setTitle(restored.title);
       setMemos(restored.memos);
-      setIsPrivate(restored.private);
       setFileId(restored.uuid);
       setReloadKey((k) => k + 1);
 
@@ -348,8 +323,8 @@ export function useFile(dirPath: string) {
           const createdAt = Math.floor(new Date(restored.createdAt).getTime() / 1000);
           const updatedAt = Math.floor(new Date(restored.updatedAt).getTime() / 1000);
           const firstLine = extractFirstLine(body);
-          await upsertFile(restored.uuid, createdAt, updatedAt, restored.title, firstLine, fileName, restored.private);
-          await updateSearchIndex(restored.uuid, restored.private ? null : body);
+          await upsertFile(restored.uuid, createdAt, updatedAt, restored.title, firstLine, fileName);
+          await updateSearchIndex(restored.uuid, body);
           await addSnapshot(restored.uuid, fileContent);
         } catch {
           // DB 未初期化などは無視（ファイル本体は更新済み）
@@ -367,13 +342,11 @@ export function useFile(dirPath: string) {
     content,
     title,
     memos,
-    isPrivate,
     isSaving,
     reloadKey,
     updateContent,
     updateTitle,
     updateMemos,
-    updatePrivate,
     openFile,
     saveFile,
     initFile,

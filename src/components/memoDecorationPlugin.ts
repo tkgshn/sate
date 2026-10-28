@@ -120,11 +120,17 @@ export function createMemoPlugin(
       }, 50);
       setTimeout(() => clearInterval(initTimer), 3000);
 
+      // トランザクションを伴わないレイアウト変化（画像の読み込み完了、ウインドウ幅の変更による
+      // リフロー）でも本文の高さが変わるので、エディタ DOM のサイズ変化で位置を取り直す
+      const resizeObserver = new ResizeObserver(() => syncDOM(editorView));
+      resizeObserver.observe(editorView.dom);
+
       return {
         update(view) { syncDOM(view); },
         destroy() {
           clearInterval(initTimer);
           observer?.disconnect();
+          resizeObserver.disconnect();
         },
       };
     },

@@ -8,7 +8,6 @@ import FileOpenDialog from './components/FileOpenDialog';
 import FileHeader from './components/FileHeader';
 import SideMemoLayer from './components/SideMemoLayer';
 import RewindOverlay from './components/RewindOverlay';
-import Timer from './components/Timer';
 import FindBar, { type FindRequest } from './components/FindBar';
 import { selectionAsQuery, stepSearch } from './components/searchPlugin';
 import { useFile } from './hooks/useFile';
@@ -33,12 +32,10 @@ function App() {
     content,
     title,
     memos,
-    isPrivate,
     reloadKey,
     updateContent,
     updateTitle,
     updateMemos,
-    updatePrivate,
     saveFile,
     openFile,
     initFile,
@@ -329,8 +326,6 @@ function App() {
       {fileName && !rewindActive && (
         <FileHeader
           fileName={fileName}
-          isPrivate={isPrivate}
-          onTogglePrivate={updatePrivate}
           onDelete={deleteCurrentFile}
           publishConfigured={publish.configured}
           publishBusy={publish.busy}
@@ -338,7 +333,6 @@ function App() {
         />
       )}
       {!rewindActive && <WordCount count={charCount} />}
-      {!rewindActive && <Timer />}
       <FindBar
         request={findRequest}
         editorViewRef={editorViewRef}

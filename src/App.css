@@ -166,6 +166,12 @@
   color: var(--text-muted);
 }
 
+/* 画像は本文の列幅に収める（はみ出すと余白のサイドメモに重なる） */
+.editor-wrapper .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+}
+
 .editor-wrapper .ProseMirror code {
   font-family: 'SF Mono', 'Menlo', monospace;
   font-size: 0.9em;

@@ -45,13 +45,6 @@
   opacity: 0.9;
 }
 
-.file-header-lock {
-  display: inline-block;
-  margin-right: 4px;
-  vertical-align: -1px;
-  color: var(--text-muted);
-}
-
 .file-header-name {
   letter-spacing: 0.02em;
 }

@@ -118,7 +118,6 @@ async function ensureFrontMatter(
     updatedAt: updatedStr,
     title: typeof newYaml.title === 'string' ? newYaml.title : null,
     memos: [],
-    private: newYaml.private === true,
   };
   return { metadata, body, injected: true };
 }
@@ -160,11 +159,10 @@ export async function reconcile(vaultPath: string): Promise<void> {
         metadata.title,
         firstLine,
         entry.name!,
-        metadata.private,
       );
 
-      // Step 5: 全文検索インデックスも更新（プライベートなら索引を残さない）
-      await updateSearchIndex(metadata.uuid, metadata.private ? null : body);
+      // Step 5: 全文検索インデックスも更新
+      await updateSearchIndex(metadata.uuid, body);
 
       // 新規取り込みファイルには初期スナップショットを 1 個だけ残す。
       // Rewind で「取り込み時点の状態」に戻れるようにするため。
