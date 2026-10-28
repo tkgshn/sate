@@ -10,6 +10,7 @@ import SideMemoLayer from './components/SideMemoLayer';
 import RewindOverlay from './components/RewindOverlay';
 import FindBar, { type FindRequest } from './components/FindBar';
 import { selectionAsQuery, stepSearch } from './components/searchPlugin';
+import { isMarginTarget, startMarginPress } from './components/marginPress';
 import { useFile } from './hooks/useFile';
 import { useSettings } from './hooks/useSettings';
 import { usePublish } from './hooks/usePublish';
@@ -17,7 +18,6 @@ import { initDatabase, getSnapshots, type SnapshotRecord } from './lib/db';
 import { reconcile } from './lib/reconcile';
 import { parseFrontMatter, type Memo } from './lib/frontmatter';
 import { diffLinesRich, cleanMarkdownForDisplay, type RichDiffLine } from './lib/diff';
-import { Selection } from '@milkdown/prose/state';
 import './App.css';
 
 // 1ステップ進める/戻すために必要なホイール累積量。trackpad の小刻みなイベントを
@@ -165,33 +165,13 @@ function App() {
     wasModalOpenRef.current = anyModalOpen;
   }, [anyModalOpen]);
 
-  // mousedown が ProseMirror 内で始まったかを覚えておく。
-  // 本文をドラッグ選択してテキストエリアの外でボタンを離すと、click イベントは
-  // mousedown と mouseup の共通祖先（.editor-container 等）で発火し、target が
-  // ProseMirror の外になる。それを「余白クリック」と誤認して選択を潰さないようにする。
-  const pressStartedInEditorRef = useRef(false);
+  // 本文の外（余白）を押したら、その高さの行にキャレットを置く。ドラッグで選択も広げる
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    pressStartedInEditorRef.current = !!(e.target as HTMLElement).closest('.ProseMirror');
-  }, []);
-
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    if (rewindActive) return;
-    if (pressStartedInEditorRef.current) return;
-    if (showShortcuts || showSettings) return;
-    const target = e.target as HTMLElement;
-    if (target.closest('.title-input')) return;
-    // ProseMirror 内部のクリックは通常動作に任せる
-    if (target.closest('.ProseMirror')) return;
-    // 余白(padding 等)をクリックしたら、エディタより上なら先頭・下なら末尾にキャレット
+    if (e.button !== 0 || rewindActive || showShortcuts || showSettings) return;
+    if (!isMarginTarget(e.target)) return;
     const view = editorViewRef.current;
-    if (!view) return;
-    const rect = (view.dom as HTMLElement).getBoundingClientRect();
-    const atStart = e.clientY < rect.top;
-    const selection = atStart
-      ? Selection.atStart(view.state.doc)
-      : Selection.atEnd(view.state.doc);
-    view.dispatch(view.state.tr.setSelection(selection).scrollIntoView());
-    view.focus();
+    if (!view || view.isDestroyed) return;
+    startMarginPress(view, e.nativeEvent);
   }, [showShortcuts, showSettings, rewindActive]);
 
   // Cmd を押しながらのホイールで Rewind モードに入る/移動する
@@ -301,7 +281,7 @@ function App() {
   if (!loaded || !settings) return null;
 
   return (
-    <div className="app" onClick={handleClick} onMouseDown={handleMouseDown}>
+    <div className="app" onMouseDown={handleMouseDown}>
       <div className="editor-container" ref={editorContainerRef}>
         <div className="editor-wrapper">
           <TitleInput key={`title-${fileName}-${reloadKey}`} value={title} onChange={updateTitle} editorViewRef={editorViewRef} />
