@@ -8,6 +8,7 @@ import { ProsemirrorAdapterProvider } from '@prosemirror-adapter/react';
 import { $prose } from '@milkdown/utils';
 import { Plugin, PluginKey, TextSelection } from '@milkdown/prose/state';
 import { Decoration, DecorationSet } from '@milkdown/prose/view';
+import type { EditorView } from '@milkdown/prose/view';
 import type { ResolvedPos } from '@milkdown/prose/model';
 import { closeHistory } from '@milkdown/prose/history';
 import type { Memo } from '../lib/frontmatter';
@@ -135,12 +136,37 @@ const typewriterScrollPlugin = $prose(() => {
   });
 });
 
-// テキスト選択のハイライトをカスタムデコレーションで描画
+// テキスト選択のハイライトをカスタムデコレーションで描画。
+// 選択したまま日本語入力を始めると、WebKit はハイライトの <span> の中で選択文字列を消して
+// 変換中の文字列を入れる。その直後に選択が潰れてハイライトの <span> が取り除かれると、
+// 変換中の文字列が入った DOM が作り直されてしまう。そこで変換が始まる前（compositionstart）に
+// ハイライトを外し、変換が終わるまで出さない。
+const selectionHighlightKey = new PluginKey<boolean>('selection-highlight');
+function showSelectionHighlight(view: EditorView): boolean {
+  if (selectionHighlightKey.getState(view.state)) {
+    view.dispatch(view.state.tr.setMeta(selectionHighlightKey, false));
+  }
+  return false;
+}
 const selectionHighlightPlugin = $prose(() => {
-  return new Plugin({
-    key: new PluginKey('selection-highlight'),
+  return new Plugin<boolean>({
+    key: selectionHighlightKey,
+    state: {
+      init: () => false,
+      apply: (tr, hidden) => (tr.getMeta(selectionHighlightKey) as boolean | undefined) ?? hidden,
+    },
     props: {
+      handleDOMEvents: {
+        compositionstart(view) {
+          if (!view.state.selection.empty) view.dispatch(view.state.tr.setMeta(selectionHighlightKey, true));
+          return false;
+        },
+        compositionend: showSelectionHighlight,
+        // compositionend を取りこぼしても、次にクリックしたらハイライトを戻す
+        mousedown: showSelectionHighlight,
+      },
       decorations(state) {
+        if (selectionHighlightKey.getState(state)) return DecorationSet.empty;
         const { from, to } = state.selection;
         if (from === to) return DecorationSet.empty;
         return DecorationSet.create(state.doc, [
