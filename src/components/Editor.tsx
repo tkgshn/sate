@@ -16,6 +16,8 @@ import { searchPlugin } from './searchPlugin';
 import { controlCharFilterPlugin } from './controlCharFilterPlugin';
 import { imeCommitGuardPlugin } from './imeCommitGuardPlugin';
 import { lineBreakPlugin } from './lineBreakPlugin';
+import { strikethrough } from './strikethroughPlugin';
+import { listTypeSwitch } from './listTypeSwitchPlugin';
 import { toEditorMarkdown, fromEditorMarkdown } from '../lib/emptyLines';
 
 interface EditorComponentProps {
@@ -181,6 +183,8 @@ function MilkdownEditor({ onChange, initialContent = '', memosRef, editorViewRef
         }));
       })
       .use(commonmark)
+      .use(strikethrough)
+      .use(listTypeSwitch)
       .use(history)
       .use(listener)
       .use(imeCommitGuardPlugin)

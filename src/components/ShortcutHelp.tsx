@@ -37,6 +37,7 @@ const sections = [
       { keys: ['Cmd', 'B'], description: '太字' },
       { keys: ['Cmd', 'I'], description: '斜体' },
       { keys: ['Cmd', 'E'], description: 'インラインコード' },
+      { keys: ['Cmd', 'Shift', 'X'], description: '打ち消し線' },
       { keys: ['Cmd', 'Z'], description: '元に戻す' },
       { keys: ['Cmd', 'Shift', 'Z'], description: 'やり直す' },
       { keys: ['Enter'], description: '段落を分割' },
