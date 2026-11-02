@@ -19,6 +19,7 @@ import { reconcile } from './lib/reconcile';
 import { parseFrontMatter, type Memo } from './lib/frontmatter';
 import { diffLinesRich, cleanMarkdownForDisplay, type RichDiffLine } from './lib/diff';
 import { isImeKeyEvent } from './lib/imeKeys';
+import { dumpTrace } from './components/selectionTracePlugin';
 import './App.css';
 
 // 1ステップ進める/戻すために必要なホイール累積量。trackpad の小刻みなイベントを
@@ -217,6 +218,12 @@ function App() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 不具合の報告用に、直前の操作の記録を書き出す（どの画面でも効かせる）
+      if (e.metaKey && e.shiftKey && !e.altKey && e.code === 'KeyD') {
+        e.preventDefault();
+        void dumpTrace(editorViewRef.current);
+        return;
+      }
       // Rewind モード中はキーバインドを横取り（編集はさせない）
       if (rewindActive) {
         if (e.key === 'Escape') { e.preventDefault(); exitRewind(); return; }

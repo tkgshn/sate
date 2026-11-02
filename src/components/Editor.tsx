@@ -21,6 +21,7 @@ import { strikethrough } from './strikethroughPlugin';
 import { listTypeSwitch } from './listTypeSwitchPlugin';
 import { toEditorMarkdown, fromEditorMarkdown } from '../lib/emptyLines';
 import { isImeKeyEvent } from '../lib/imeKeys';
+import { selectionTracePlugin } from './selectionTracePlugin';
 
 interface EditorComponentProps {
   onChange: (markdown: string) => void;
@@ -222,6 +223,7 @@ function MilkdownEditor({ onChange, initialContent = '', memosRef, editorViewRef
       .use(lineBreakPlugin)
       .use(historyBoundaryPlugin)
       .use(typewriterScrollPlugin)
+      .use(selectionTracePlugin)
       .use(selectionHighlightPlugin)
       .use(searchPlugin)
       .use(controlCharFilterPlugin)

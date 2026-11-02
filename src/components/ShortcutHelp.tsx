@@ -9,6 +9,7 @@ const sections = [
       { keys: ['Cmd', ','], description: '環境設定' },
       { keys: ['Cmd', 'O'], description: 'ファイルを開く' },
       { keys: ['Cmd', 'N'], description: '新規ファイル' },
+      { keys: ['Cmd', 'Shift', 'D'], description: '直前の操作の記録を保存（不具合の報告用）' },
     ],
   },
   {
