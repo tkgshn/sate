@@ -2,6 +2,7 @@ import { useCallback, useRef, useEffect, useState } from 'react';
 import type { Memo } from '../lib/frontmatter';
 import type { EditorView } from '@milkdown/prose/view';
 import { memoPluginKey } from './memoDecorationPlugin';
+import { isImeKeyEvent } from '../lib/imeKeys';
 import './SideMemoLayer.css';
 
 /** エディタ水平中央の Y 座標にあたる doc 内 pos を取得 */
@@ -149,12 +150,14 @@ function MemoCard({ memo, hovered, onTyping, onDragEnd, onChange, onDelete, edit
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     // 書き始めたらハンドルは引っ込める（次にマウスが動いたら再表示）
     onTyping();
-    if (e.key === 'Escape') {
+    // 変換を取り消す Escape でメモから抜けない
+    if (e.key === 'Escape' && !isImeKeyEvent(e)) {
       e.preventDefault();
-      (document.querySelector('.ProseMirror') as HTMLElement | null)?.focus();
+      const view = editorViewRef.current;
+      if (view && !view.isDestroyed) view.focus();
     }
     e.stopPropagation();
-  }, [onTyping]);
+  }, [onTyping, editorViewRef]);
 
   // ── ドラッグ ──
   const handleDragStart = useCallback((e: React.MouseEvent) => {

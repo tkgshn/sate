@@ -18,6 +18,7 @@ import { initDatabase, getSnapshots, type SnapshotRecord } from './lib/db';
 import { reconcile } from './lib/reconcile';
 import { parseFrontMatter, type Memo } from './lib/frontmatter';
 import { diffLinesRich, cleanMarkdownForDisplay, type RichDiffLine } from './lib/diff';
+import { isImeKeyEvent } from './lib/imeKeys';
 import './App.css';
 
 // 1ステップ進める/戻すために必要なホイール累積量。trackpad の小刻みなイベントを
@@ -232,7 +233,10 @@ function App() {
         if (content) {
           saveFile(true).then(() => {
             initFile();
-            setTimeout(() => { (document.querySelector('.ProseMirror') as HTMLElement | null)?.focus(); }, 160);
+            setTimeout(() => {
+              const view = editorViewRef.current;
+              if (view && !view.isDestroyed) view.focus();
+            }, 160);
           });
         }
       }
@@ -254,7 +258,8 @@ function App() {
       }
       if (e.metaKey && e.key === '/') { e.preventDefault(); setShowShortcuts((v) => !v); }
       if (e.metaKey && e.key === ',') { e.preventDefault(); setShowSettings((v) => !v); }
-      if (e.key === 'Escape') {
+      // 変換を取り消す Escape で検索バーや設定を閉じない
+      if (e.key === 'Escape' && !isImeKeyEvent(e)) {
         if (showSettings) { e.preventDefault(); setShowSettings(false); }
         else if (showShortcuts) { e.preventDefault(); setShowShortcuts(false); }
         else if (showFileOpen) { e.preventDefault(); setShowFileOpen(false); }

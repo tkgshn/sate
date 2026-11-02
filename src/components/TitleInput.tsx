@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { EditorView } from '@milkdown/prose/view';
 import type { Node as ProseNode } from '@milkdown/prose/model';
+import { isImeKeyEvent } from '../lib/imeKeys';
 import './TitleInput.css';
 
 /** 文書で最初の textblock の中身の開始位置。textblock が無ければ null */
@@ -35,16 +36,18 @@ export default function TitleInput({ value, onChange, editorViewRef }: TitleInpu
   );
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // 変換の確定 Enter・取り消しの Escape は IME に任せる
+    if (isImeKeyEvent(e)) return;
     if (e.key === 'Enter' || e.key === 'ArrowDown') {
       e.preventDefault();
-      const editor = document.querySelector('.ProseMirror') as HTMLElement | null;
-      editor?.focus();
+      const view = editorViewRef.current;
+      if (view && !view.isDestroyed) view.focus();
     }
     if (e.key === 'Escape') {
       e.preventDefault();
       inputRef.current?.blur();
     }
-  }, []);
+  }, [editorViewRef]);
 
   // エディタから上矢印キーでタイトルにフォーカス
   // capture phase で受けて、ProseMirror が処理する前に判定する。
@@ -55,7 +58,7 @@ export default function TitleInput({ value, onChange, editorViewRef }: TitleInpu
   useEffect(() => {
     const handleEditorKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'ArrowUp') return;
-      if (e.isComposing || e.keyCode === 229) return;
+      if (isImeKeyEvent(e)) return;
 
       const view = editorViewRef.current;
       if (!view || view.isDestroyed) return;

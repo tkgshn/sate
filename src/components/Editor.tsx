@@ -20,6 +20,7 @@ import { lineBreakPlugin } from './lineBreakPlugin';
 import { strikethrough } from './strikethroughPlugin';
 import { listTypeSwitch } from './listTypeSwitchPlugin';
 import { toEditorMarkdown, fromEditorMarkdown } from '../lib/emptyLines';
+import { isImeKeyEvent } from '../lib/imeKeys';
 
 interface EditorComponentProps {
   onChange: (markdown: string) => void;
@@ -64,7 +65,7 @@ const historyBoundaryPlugin = $prose(() => {
       handleDOMEvents: {
         keydown(view, event) {
           // IME の確定 Enter は対象外
-          if (event.isComposing || event.keyCode === 229) return false;
+          if (isImeKeyEvent(event)) return false;
           const { $from } = view.state.selection;
           if (!isEnterKey(event) && !(isListKey(event) && inListItem($from))) return false;
 
@@ -117,6 +118,10 @@ const typewriterScrollPlugin = $prose(() => {
         const { selection } = view.state;
         // ノード選択（区切り線など）は ProseMirror 標準のスクロールに任せる
         if (!(selection instanceof TextSelection)) return false;
+        // 変換中は中央へ寄せない。未確定の文字列がある間に画面を動かすと、
+        // 変換候補の窓が置き去りになったり、選択位置がずれて見えたりする。
+        // 画面外へ出たときだけ ProseMirror 標準の最小限のスクロールに任せる
+        if (view.composing) return false;
         // 上下キーでの移動は WebKit のスクロールに任せる
         if (Date.now() - verticalKeyAt < VERTICAL_KEY_WINDOW_MS) return true;
 

@@ -18,6 +18,7 @@ import { Fragment } from '@milkdown/prose/model';
 import type { Node, NodeType } from '@milkdown/prose/model';
 import { canJoin } from '@milkdown/prose/transform';
 import { $inputRule, $prose } from '@milkdown/utils';
+import { isImeKeyEvent } from '../lib/imeKeys';
 
 type ListKind = 'bullet' | 'ordered';
 
@@ -125,6 +126,7 @@ export const listTypeSwitchKeymap = $prose(() =>
     props: {
       handleDOMEvents: {
         keydown(view, event) {
+          if (isImeKeyEvent(event)) return false;
           if (!(event.metaKey || event.ctrlKey) || !event.altKey || event.shiftKey) return false;
           const kind: ListKind | null =
             event.code === 'Digit7' ? 'ordered' : event.code === 'Digit8' ? 'bullet' : null;
