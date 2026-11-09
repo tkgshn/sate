@@ -19,6 +19,7 @@ import { imeCommitGuardPlugin } from './imeCommitGuardPlugin';
 import { lineBreakPlugin } from './lineBreakPlugin';
 import { breakableTokenPlugin } from './breakableTokenPlugin';
 import { strikethrough } from './strikethroughPlugin';
+import { parsedAttrsSchema } from './parsedAttrsSchema';
 import { listTypeSwitch } from './listTypeSwitchPlugin';
 import { toEditorMarkdown, fromEditorMarkdown } from '../lib/emptyLines';
 import { isImeKeyEvent } from '../lib/imeKeys';
@@ -216,6 +217,7 @@ function MilkdownEditor({ onChange, initialContent = '', memosRef, editorViewRef
         }));
       })
       .use(commonmark)
+      .use(parsedAttrsSchema)
       .use(strikethrough)
       .use(listTypeSwitch)
       .use(history)
