@@ -11,13 +11,16 @@
  * コピー・貼り付けのプレーンテキストも同じ対応で変換する。
  *
  * リスト・見出し・コードブロックの中では Milkdown 標準の挙動のまま。
+ * 引用の中では同じ動きに加えて、外へ出る操作がある（quoteExit.ts）。
  */
-import { Plugin, PluginKey, TextSelection } from '@milkdown/prose/state';
+import { Plugin, PluginKey, Selection, TextSelection } from '@milkdown/prose/state';
 import type { EditorState, Transaction } from '@milkdown/prose/state';
 import { Fragment, Slice } from '@milkdown/prose/model';
 import type { Node, ResolvedPos, Schema } from '@milkdown/prose/model';
 import { splitBlock } from '@milkdown/prose/commands';
+import type { EditorView } from '@milkdown/prose/view';
 import { $prose } from '@milkdown/utils';
+import { exitTrailingQuote, inQuoteParagraph, liftFromQuote } from './quoteExit';
 
 /** カーソル位置が、強制改行を使う段落（リストの中ではない段落）か */
 function inPlainParagraph($pos: ResolvedPos): boolean {
@@ -32,6 +35,10 @@ function handleEnter(state: EditorState, dispatch: (tr: Transaction) => void): b
   const { selection } = state;
   if (!(selection instanceof TextSelection) || !inPlainParagraph(selection.$from)) return false;
   const hardbreak = state.schema.nodes.hardbreak;
+
+  if (selection.empty && selection.$from.parent.content.size === 0 && inQuoteParagraph(selection.$from)) {
+    return liftFromQuote(state, dispatch);
+  }
 
   // 2 回目: 直前の強制改行を消して段落を分ける
   if (selection.empty && selection.$from.nodeBefore?.type === hardbreak) {
@@ -51,6 +58,8 @@ function handleBackspace(state: EditorState, dispatch: (tr: Transaction) => void
   if (!(selection instanceof TextSelection) || !selection.empty) return false;
   const $pos = selection.$from;
   if ($pos.parentOffset !== 0 || !inPlainParagraph($pos)) return false;
+  // 引用の先頭: 前の段落につなげず、まず引用を解く
+  if (inQuoteParagraph($pos) && $pos.index(-1) === 0) return liftFromQuote(state, dispatch);
   const boundary = $pos.before();
   const prev = state.doc.resolve(boundary).nodeBefore;
   // 前が空でない段落のときだけ。空段落や見出しなどは標準の挙動に任せる
@@ -61,6 +70,13 @@ function handleBackspace(state: EditorState, dispatch: (tr: Transaction) => void
   tr.setSelection(TextSelection.create(tr.doc, boundary));
   dispatch(tr.scrollIntoView());
   return true;
+}
+
+/** 文書の最後の段落の最後の行から ↓ を押したときだけ、最後の引用の外へ出る */
+function handleArrowDown(view: EditorView): boolean {
+  const { selection, doc } = view.state;
+  if (!selection.empty || selection.$from.end() !== Selection.atEnd(doc).from) return false;
+  return view.endOfTextblock('down') && exitTrailingQuote(view);
 }
 
 /**
@@ -121,6 +137,9 @@ export const lineBreakPlugin = $prose(() => {
         }
         if (event.key === 'Backspace' && !event.shiftKey) {
           return handleBackspace(view.state, view.dispatch);
+        }
+        if (event.key === 'ArrowDown' && !event.shiftKey) {
+          return handleArrowDown(view);
         }
         return false;
       },

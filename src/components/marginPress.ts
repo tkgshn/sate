@@ -10,6 +10,7 @@
  */
 import { Selection, TextSelection } from '@milkdown/prose/state';
 import type { EditorView } from '@milkdown/prose/view';
+import { exitTrailingQuote } from './quoteExit';
 
 /** 余白として扱う要素（ここを押したときだけ処理する） */
 const MARGIN_SELECTOR = '.app, .editor-container, .editor-wrapper, .side-memo-gutter';
@@ -34,6 +35,12 @@ function posNearCoords(view: EditorView, x: number, y: number): number {
  */
 export function startMarginPress(view: EditorView, event: MouseEvent): void {
   event.preventDefault();
+  // 文書の最後が引用だと、下を押しても引用の中にしかキャレットを置けない
+  const below = event.clientY > (view.dom as HTMLElement).getBoundingClientRect().bottom;
+  if (below && !event.shiftKey && exitTrailingQuote(view)) {
+    view.focus();
+    return;
+  }
   const head = posNearCoords(view, event.clientX, event.clientY);
   const anchor = event.shiftKey ? view.state.selection.anchor : head;
   const select = (h: number) =>
