@@ -1,6 +1,23 @@
-import { useLayoutEffect, useMemo, useRef } from 'react';
+import { Fragment, useLayoutEffect, useMemo, useRef } from 'react';
 import type { RichDiffLine } from '../lib/diff';
+import { BREAKABLE_CLASS, breakableRanges } from '../lib/breakableTokens';
 import './RewindOverlay.css';
+
+/** 本文と同じく、URL などの長い並びだけ折り返しを許して表示する */
+function BreakableText({ text }: { text: string }) {
+  const ranges = breakableRanges(text);
+  return (
+    <>
+      {ranges.map(([start, end], i) => (
+        <Fragment key={start}>
+          {text.slice(i === 0 ? 0 : ranges[i - 1][1], start)}
+          <span className={BREAKABLE_CLASS}>{text.slice(start, end)}</span>
+        </Fragment>
+      ))}
+      {text.slice(ranges.at(-1)?.[1] ?? 0)}
+    </>
+  );
+}
 
 export interface RewindSnapshotMeta {
   id: number;
@@ -85,7 +102,7 @@ export default function RewindOverlay({
                     key={j}
                     className={`rewind-seg rewind-seg--${seg.tag}`}
                   >
-                    {seg.text || ' '}
+                    {seg.text ? <BreakableText text={seg.text} /> : ' '}
                   </span>
                 ))}
               </p>

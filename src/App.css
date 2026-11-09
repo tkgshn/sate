@@ -24,6 +24,11 @@
   padding: 40vh 0 50vh;
 }
 
+/* URL など長い英数字の並びだけ、どこでも折り返す（lib/breakableTokens.ts） */
+.sate-breakable {
+  word-break: break-all;
+}
+
 /* Milkdown editor styling */
 .editor-wrapper .milkdown,
 .editor-wrapper [data-milkdown-root="true"] {

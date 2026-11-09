@@ -17,6 +17,7 @@ import { searchPlugin } from './searchPlugin';
 import { controlCharFilterPlugin } from './controlCharFilterPlugin';
 import { imeCommitGuardPlugin } from './imeCommitGuardPlugin';
 import { lineBreakPlugin } from './lineBreakPlugin';
+import { breakableTokenPlugin } from './breakableTokenPlugin';
 import { strikethrough } from './strikethroughPlugin';
 import { listTypeSwitch } from './listTypeSwitchPlugin';
 import { toEditorMarkdown, fromEditorMarkdown } from '../lib/emptyLines';
@@ -221,6 +222,7 @@ function MilkdownEditor({ onChange, initialContent = '', memosRef, editorViewRef
       .use(listener)
       .use(imeCommitGuardPlugin)
       .use(lineBreakPlugin)
+      .use(breakableTokenPlugin)
       .use(historyBoundaryPlugin)
       .use(typewriterScrollPlugin)
       .use(selectionTracePlugin)
